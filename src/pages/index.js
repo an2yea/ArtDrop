@@ -2,13 +2,15 @@ import Head from 'next/head'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import { Button, ButtonGroup, Center, Container, Flex, Stack, Box ,Spacer, Textarea, Image} from '@chakra-ui/react'
-import { Contract, providers, utils } from "ethers";
+import { Button, Container, Flex, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, DrawerHeader, useDisclosure} from '@chakra-ui/react'
+
+import { ethers, Contract, providers, utils } from "ethers";
 import axios from 'axios'
-
-import { useState, useEffect } from 'react'
-
+import { GaslessOnboarding} from "@gelatonetwork/gasless-onboarding"
+import { useState, useEffect, use } from 'react'
 const inter = Inter({ subsets: ['latin'] })
+import { CONTRACT_ABI, CONTRACT_ADDRESS} from '../constants/contracts'
+
 
 export default function Home() {
 
@@ -18,12 +20,26 @@ export default function Home() {
   let pinata_jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
   let grad1 = 'linear-gradient(90deg, rgba(10,116,255,1) 0%, rgba(52,122,202,1) 38%, rgba(0,228,173,1) 100%)'
   let grad2 = 'linear-gradient(90deg,rgba(0,228,173,1) 0%, rgba(52,122,202,1) 38%, rgba(10,116,255,1) 100%)'
-  //States ----------
+  //States - Minting ----------
   const [prompt, setPrompt] = useState('')
   const [generated, setGenerated] = useState(false)
   const [generatingImg, setGeneratingImg] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
   const [minting, setMinting] = useState(false)
+  const [taskId, setTaskId] = useState('')
+  const [taskStatus, setTaskStatus] = useState('')
+
+  //States - Wallet
+  const [loginLoding, setLoginLoading] = useState(false)
+  const [walletAddress, setWalletAddress] = useState();
+  const [gobMethod, setGOBMethod] = useState(null);
+  const [web3AuthProvider, setWeb3AuthProvider] = useState(null)
+  const [tokens, setTokens] = useState([]);
+  const [gw, setGW] = useState();
+  const [size, setSize] = useState('md')
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  
+
 
   //Functions --------
   let handlePromptChange = (e) => {
@@ -103,14 +119,173 @@ const genIpfsHash = async() => {
   
 }
 const mintNFT = async () => {
+
+  //gen ipfs hash
   setMinting(true)
   setGenerated(false)
+  setTaskStatus('Initialised')
+  // setGeneratingImg(true)
   let ipfsHash = await genIpfsHash();
   console.log(ipfsHash)
-  setMinting(false)
-  setGenerated(true)c
+
+  //Gasless transaction
+      let iface = new ethers.utils.Interface(CONTRACT_ABI);
+      let tokenURI = `https://ipfs.io/ipfs/${ipfsHash}`
+      let recipient = walletAddress;
+      let tx = iface.encodeFunctionData("mintNFT", [ recipient,  tokenURI])
+      
+      const temp = await gw.sponsorTransaction(
+        CONTRACT_ADDRESS,
+        tx
+      );
+      console.log(temp)
+      setTaskId(temp.taskId);
 }
 
+const login = async() => {
+
+  try{
+     onOpen();
+    setLoginLoading(true);
+    const gaslessWalletConfig = { apiKey: process.env.NEXT_PUBLIC_GASLESSWALLET_KEY};
+    const loginConfig = {
+      domains: ["http://localhost:3000/"],
+      chain : {
+        id: 80001,
+        rpcUrl: "https://wiser-alien-morning.matic-testnet.discover.quiknode.pro/c2f6cfc05517853e094ad7ea47188326625f20b5/"
+      },
+      openLogin: {
+        redirectUrl: `http://localhost:3000/`,
+      },
+    };
+    const gaslessOnboarding = new GaslessOnboarding(
+      loginConfig,
+      gaslessWalletConfig
+    );
+    
+    await gaslessOnboarding.init();
+    const web3AP = await gaslessOnboarding.login();
+    setWeb3AuthProvider(web3AP);
+    setLoginLoading(false);
+    // console.log("Web3 Auth Provider", web3AP);
+    setGOBMethod(gaslessOnboarding);
+
+    const gaslessWallet = gaslessOnboarding.getGaslessWallet();
+    setGW(gaslessWallet);
+    // console.log("Wallet is", gaslessWallet)
+
+    const address = gaslessWallet.getAddress();
+    setWalletAddress(address);
+    console.log("Address is", address)
+    onClose();
+
+    const result = await fetch(`https://api.covalenthq.com/v1/80001/address/${address}/balances_v2/?key=${process.env.NEXT_PUBLIC_COVALENT_APIKEY}`);
+    const balance = await result.json();
+    setTokens(balance.data.items);
+
+
+  } catch (err){
+    console.error(err);
+  }
+}
+
+const fetchStatus = async(clear) => {
+  try{
+    fetch(`https://relay.gelato.digital/tasks/status/${taskId}`)
+      .then(response => response.json())
+      .then(task => {
+        if(task.task != undefined){
+          setTaskStatus(task.task.taskState)
+          console.log(task.task.taskState);
+          if(task.task.taskState == 'Cancelled' || task.task.taskState == 'ExecSuccess'){
+            clearInterval(clear)
+            setMinting(false)
+            setGenerated(true)
+          }
+        }
+      });
+  }
+  catch(err){
+    setTaskStatus('Initialised')
+  }
+}
+
+const renderAlert = () => {
+  // console.log("TaskStatus is", taskStatus);
+  // console.log("here in renderAlert")
+  switch(taskStatus){
+    case 'Initialised':
+      return <Alert status='info'>
+              <AlertIcon />
+              <AlertTitle>Minting!</AlertTitle>
+              <AlertDescription>Minting of your NFT has been Initialised</AlertDescription>
+            </Alert>
+    case 'CheckPending':
+      return <Alert status='info'>
+              <AlertIcon />
+              <AlertTitle>Your request is being processed!</AlertTitle>
+              <AlertDescription>Transaction check in progress</AlertDescription>
+            </Alert>
+    case 'ExecPending':
+      return <Alert status='info'>
+              <AlertIcon />
+              <AlertTitle>Your request is being processed!</AlertTitle>
+              <AlertDescription>Executing mint transaction</AlertDescription>
+            </Alert>
+    case 'WaitingForConfirmation':
+      return <Alert status='info'>
+              <AlertIcon />
+              <AlertTitle>Your request is being processed!</AlertTitle>
+              <AlertDescription>Waiting for block confirmation</AlertDescription>
+            </Alert>
+    case 'ExecSuccess':
+      return <Alert status='success'>
+                <AlertIcon />
+                <AlertTitle>NFT minted!</AlertTitle>
+                <AlertDescription>Your AI image geNFT has been minted to your wallet</AlertDescription>
+              </Alert>
+    case 'Cancelled':
+      return <Alert status='error'>
+              <AlertIcon />
+              <AlertTitle>NFT minting failed!</AlertTitle>
+              <AlertDescription>Your request was cancelled, please try again</AlertDescription>
+            </Alert>
+    case 'ExecReverted':
+      return <Alert status='error'>
+                <AlertIcon />
+                <AlertTitle>NFT minting failed!</AlertTitle>
+                <AlertDescription>Your request was reverted, please try again</AlertDescription>
+              </Alert>
+    // default: return <Alert severity='info'> WAITTTTT</Alert>
+
+  }
+}
+
+
+
+const handleLogOut = async() =>{
+  await gobMethod.logout();
+  setWalletAddress();
+}
+//useEffects ----------
+
+useEffect(()=>{
+  login();
+}, [])
+
+useEffect(() => {
+  if(taskId){
+
+    let clear = setInterval(() => {
+     fetchStatus(clear);
+    }, 1500);
+ }
+}, [taskId])
+
+useEffect(() => {
+  console.log('Task status was changed', taskStatus);
+  if(taskStatus)renderAlert();
+}, [taskStatus]);
 
   return (
     <>
@@ -150,9 +325,28 @@ const mintNFT = async () => {
               Mint NFT
             </Button>
          </Flex>
+         {walletAddress? <div>Logged In!</div> : <div></div>}
+
          </Flex>
+         {renderAlert()}
+         
          
       </Container>
+      <Button
+          onClick={() => handleLogOut()}
+          m={4}
+        >Logout</Button>
+      <Drawer placement='top' onClose={onClose} isOpen={isOpen} size='full'>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerHeader>{`${size} drawer contents`}</DrawerHeader>
+          <DrawerBody>
+            {size === 'full'
+              ? `You're trapped 😆 , refresh the page to leave or press 'Esc' key.`
+              : null}
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
       </main>
     </>
   )
@@ -167,4 +361,5 @@ const mintNFT = async () => {
   - Add placeholder image pre-mint
   - Error handling
   - Send more data to pinata than just image url, maybe iter version
+  - Add loading backdrop for login
 */
