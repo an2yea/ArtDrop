@@ -3,7 +3,7 @@ import React from 'react'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer} from '@chakra-ui/react'
+import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer, Tooltip} from '@chakra-ui/react'
 // import { CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
 import Link from 'next/Link';
 import { ethers, Contract, providers, utils } from "ethers";
@@ -410,7 +410,7 @@ const Header = () => {
           direction={['column', 'row', 'row', 'row']}
           pt={[4, 4, 0, 0]} color='white' fontWeight={8}
         >
-          {walletAddress &&  <Button margin='2px' variant="link" colorScheme='white' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button> }
+          {walletAddress &&  <Tooltip label='Click to copy address'><Button margin='2px' variant="link" colorScheme='white' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button></Tooltip> }
           &nbsp; &nbsp;
           {walletAddress &&  <Button variant="link" colorScheme='white' bgColor="transparent" onClick={() => showMyNfts()} isLast> View NFTs </Button> }         
         </Flex>
