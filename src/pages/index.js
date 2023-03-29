@@ -467,14 +467,14 @@ const Header = () => {
          
          
       </Container>
-      <Button
+      {/* <Button
           onClick={() => handleLogOut()}
           m={4}
         >Logout</Button>
         <Button
           onClick={() => showMyNfts()}
           m={4}
-        >My NFTs</Button>
+        >My NFTs</Button> */}
           <Drawer placement='top' onClose={onCloseM} isOpen = {isOpenM} size='full'>
                   <DrawerOverlay />
                   <DrawerContent>
