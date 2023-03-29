@@ -1,8 +1,9 @@
 import Head from 'next/head'
+import React from 'react'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import { Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, DrawerHeader, useDisclosure, Spinner, Center} from '@chakra-ui/react'
+import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading} from '@chakra-ui/react'
 import { CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
 import Link from 'next/Link';
 import { ethers, Contract, providers, utils } from "ethers";
@@ -29,6 +30,7 @@ export default function Home() {
   const [minting, setMinting] = useState(false)
   const [taskId, setTaskId] = useState('')
   const [taskStatus, setTaskStatus] = useState('')
+  const [mynfts, setMynfts] = useState(null)
 
   //States - Wallet
   const [loginLoding, setLoginLoading] = useState(false)
@@ -39,7 +41,9 @@ export default function Home() {
   const [gw, setGW] = useState();
   const [size, setSize] = useState('md')
   const { isOpen, onOpen, onClose } = useDisclosure()
-  
+  const obj = useDisclosure()
+  // console.log("closure", obj.isOpen)
+  let isOpenM = obj.isOpen, onOpenM = obj.onOpen, onCloseM = obj.onClose;
 
   const [show, setShow] = useState(false);
   const toggleMenu = () => setShow(!show);
@@ -51,9 +55,11 @@ export default function Home() {
   }
 
   let submitPrompt = async () => {
+    console.log("gen is", generated)
     setGeneratingImg(true);
-    setGenerated(false);
     await generateImage();
+    setGenerated(false);
+
 
   }
 
@@ -186,7 +192,7 @@ const login = async() => {
     const balance = await result.json();
     setTokens(balance.data.items);
 
-
+    console.log("generated is", generated)
   } catch (err){
     console.error(err);
   }
@@ -204,6 +210,11 @@ const fetchStatus = async(clear) => {
             clearInterval(clear)
             setMinting(false)
             setGenerated(true)
+            if(task.task.taskState == 'ExecSuccess'){
+              let obj = {tokenId: 0, url: imageUrl}
+              setMynfts(oldNfts => [...oldNfts, obj])
+            }
+
           }
         }
       });
@@ -270,6 +281,76 @@ const handleLogOut = async() =>{
   await gobMethod.logout();
   setWalletAddress();
 }
+
+const showMyNfts = async () => {
+  onOpenM();
+}
+
+const renderNftCards = () => {
+
+  // const  = [{test:'test'}, {test:'test'}, {test:'test'}, {test:'test'}]
+  if(mynfts!=null)return mynfts.map((nft, index) => 
+          
+      <div key={index}>
+          <GridItem w='100%'>
+        <Card maxW='sm'>
+          <CardBody>
+            <Image
+              src={nft.url}
+              alt='Green double couch with wooden legs'
+              borderRadius='md'
+            />
+            <Stack mt='6' spacing='3'>
+              <Heading size='md'>Living room Sofa</Heading>
+              <Text>
+                This sofa is perfect for modern tropical spaces, baroque inspired
+                spaces, earthy toned spaces and for people who love a chic design with a
+                sprinkle of vintage design.
+              </Text>
+              <Text color='blue.600' fontSize='2xl'>
+                $450
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+        </GridItem>
+      </div>
+  )
+}
+
+
+const fetchNfts = async () => {
+      try{
+      if(web3AuthProvider != undefined){
+        const nfts = [];
+        const provider = new ethers.providers.Web3Provider(web3AuthProvider);
+        console.log(provider);
+        const signer = await provider.getSigner();
+        console.log(CONTRACT_ABI);
+        console.log(CONTRACT_ADDRESS)
+        console.log(signer)
+        const nftContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        let bal = await nftContract.balanceOf(walletAddress);
+        console.log('Balance is', bal.toNumber());
+
+        for(var i=0; i<bal;++i){
+          const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
+          const tokenURI = await nftContract.tokenURI(tokenId);
+          // const metadata = await fetch(`https://ipfs.io/ipfs/${tokenURI.substr(7)}`).then(response => response.json());
+          let res = await fetch(tokenURI);
+          res = await res.json()
+          nfts.push({tokenId, url: res.url});
+        }
+        console.log("My NFTs are", nfts);
+        setMynfts(nfts);
+
+      }
+    }catch(err){
+      console.log(err);
+    }
+
+}
 //useEffects ----------
 
 // useEffect(()=>{
@@ -290,6 +371,11 @@ useEffect(() => {
   if(taskStatus)renderAlert();
 }, [taskStatus]);
 
+useEffect(()=>{
+  if(walletAddress){
+    fetchNfts();
+  }
+}, [walletAddress])
 const Header = () => {
   
   return (
@@ -362,7 +448,8 @@ const Header = () => {
             {/* <Spacer /> */}
             <Button width='40%' background= {grad2} variant='solid' color='white'
             _hover={{color:'white', opacity:'70%'}}
-              disabled={!generated}
+              disabled='true'
+              
               onClick={mintNFT}
               isLoading={minting}
             >
@@ -380,6 +467,33 @@ const Header = () => {
           onClick={() => handleLogOut()}
           m={4}
         >Logout</Button>
+        <Button
+          onClick={() => showMyNfts()}
+          m={4}
+        >My NFTs</Button>
+          <Drawer placement='top' onClose={onCloseM} isOpen = {isOpenM} size='full'>
+                  <DrawerOverlay />
+                  <DrawerContent>
+                    {/* <DrawerHeader>{`${size} drawer contents`}</DrawerHeader> */}
+                    <DrawerBody  background={grad1}>
+                      <Button
+                          onClick={() => onCloseM()}
+                          m={4}
+                        >Back to Minting!
+                        </Button>
+                      {/* <Center margin='auto' height='100vh' > */}
+                      <Container>
+                            <Grid templateColumns='repeat(2, 1fr)' gap={6}>
+                                  {renderNftCards()}
+
+                            </Grid>
+                      </Container>
+                      
+                      {/* </Center> */}
+                      
+                    </DrawerBody>
+                  </DrawerContent>
+                </Drawer>
       <Drawer placement='top' onClose={onClose} isOpen={isOpen} size='full'>
         <DrawerOverlay />
         <DrawerContent>
@@ -387,7 +501,7 @@ const Header = () => {
           <DrawerBody  background={grad1}>
             <Center margin='auto' height='100vh' >
             <Spinner size='xl' height='200px' width='200px' color = 'white'/>
-            
+
             </Center>
             
           </DrawerBody>
@@ -407,5 +521,5 @@ const Header = () => {
   - Add placeholder image pre-mint
   - Error handling
   - Send more data to pinata than just image url, maybe iter version
-  - Add loading backdrop for login
+  - Navbar with wallet details + history feature
 */
