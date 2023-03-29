@@ -2,7 +2,7 @@ import Head from 'next/head'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import { Button, Container, Flex, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, DrawerHeader, useDisclosure} from '@chakra-ui/react'
+import { Button, Container, Flex, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, DrawerHeader, useDisclosure, Spinner, Center} from '@chakra-ui/react'
 
 import { ethers, Contract, providers, utils } from "ethers";
 import axios from 'axios'
@@ -339,11 +339,13 @@ useEffect(() => {
       <Drawer placement='top' onClose={onClose} isOpen={isOpen} size='full'>
         <DrawerOverlay />
         <DrawerContent>
-          <DrawerHeader>{`${size} drawer contents`}</DrawerHeader>
-          <DrawerBody>
-            {size === 'full'
-              ? `You're trapped 😆 , refresh the page to leave or press 'Esc' key.`
-              : null}
+          {/* <DrawerHeader>{`${size} drawer contents`}</DrawerHeader> */}
+          <DrawerBody  background={grad1}>
+            <Center margin='auto' height='100vh' >
+            <Spinner size='xl' height='200px' width='200px' color = 'white'/>
+            
+            </Center>
+            
           </DrawerBody>
         </DrawerContent>
       </Drawer>
