@@ -320,9 +320,9 @@ const Header = () => {
           direction={['column', 'row', 'row', 'row']}
           pt={[4, 4, 0, 0]} color='white' fontWeight={8}
         >
-          {walletAddress &&  <Button bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button> }
-          {walletAddress &&  <Button bgColor="transparent" onClick={() => handleLogOut()} isLast> Log Out </Button> }
-          {!walletAddress && <Button bgColor="transparent" onClick={() => login()}> SignIn </Button>}
+          {walletAddress &&  <Button colorScheme='blue' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button> }
+          {walletAddress &&  <Button colorScheme='blue' bgColor="transparent" onClick={() => handleLogOut()} isLast> Log Out </Button> }
+          {!walletAddress && <Button colorScheme='blue' bgColor="transparent" onClick={() => login()}> SignIn </Button>}
          
         </Flex>
       </Box>
