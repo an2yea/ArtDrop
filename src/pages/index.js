@@ -2,8 +2,9 @@ import Head from 'next/head'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import { Button, Container, Flex, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, DrawerHeader, useDisclosure, Spinner, Center} from '@chakra-ui/react'
-
+import { Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, DrawerHeader, useDisclosure, Spinner, Center} from '@chakra-ui/react'
+import { CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
+import Link from 'next/Link';
 import { ethers, Contract, providers, utils } from "ethers";
 import axios from 'axios'
 import { GaslessOnboarding} from "@gelatonetwork/gasless-onboarding"
@@ -40,6 +41,8 @@ export default function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure()
   
 
+  const [show, setShow] = useState(false);
+  const toggleMenu = () => setShow(!show);
 
   //Functions --------
   let handlePromptChange = (e) => {
@@ -269,9 +272,9 @@ const handleLogOut = async() =>{
 }
 //useEffects ----------
 
-useEffect(()=>{
-  login();
-}, [])
+// useEffect(()=>{
+//   login();
+// }, [])
 
 useEffect(() => {
   if(taskId){
@@ -287,6 +290,46 @@ useEffect(() => {
   if(taskStatus)renderAlert();
 }, [taskStatus]);
 
+const Header = () => {
+  
+  return (
+    <Flex
+      mb={8}
+      p={6} 
+      as="nav"
+      align="center"
+      justify="space-around"
+      wrap="wrap"
+      w="100%"
+    >
+      <Box w="200px" h='75px'>
+        <Image w='inherit' h='inherit' src="white_artdrop.svg"></Image>
+      </Box>
+
+      <Box display={{ base: 'block', md: 'none' }} onClick={toggleMenu}>
+        {show ? <CloseIcon /> : <HamburgerIcon />}
+      </Box>
+
+      <Box
+        display={{ base: show ? 'block' : 'none', md: 'block' }}
+        flexBasis={{ base: '100%', md: 'auto' }}
+      >
+        <Flex
+          align="center"
+          justify={['center', 'space-between', 'flex-start', 'flex-end']}
+          direction={['column', 'row', 'row', 'row']}
+          pt={[4, 4, 0, 0]} color='white' fontWeight={8}
+        >
+          {walletAddress &&  <Button bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button> }
+          {walletAddress &&  <Button bgColor="transparent" onClick={() => handleLogOut()} isLast> Log Out </Button> }
+          {!walletAddress && <Button bgColor="transparent" onClick={() => login()}> SignIn </Button>}
+         
+        </Flex>
+      </Box>
+    </Flex>
+  );
+};
+
   return (
     <>
       <Head>
@@ -296,6 +339,7 @@ useEffect(() => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
+        <Header />
       <Container marginTop='20px' maxW='550px' bg='#f5f5f5'   borderRadius='5px' > 
           <Flex direction='column' justifyContent='center'  minH='50vh'  >
           <Image
