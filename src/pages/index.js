@@ -3,8 +3,8 @@ import React from 'react'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading} from '@chakra-ui/react'
-import { CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
+import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer} from '@chakra-ui/react'
+// import { CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
 import Link from 'next/Link';
 import { ethers, Contract, providers, utils } from "ethers";
 import axios from 'axios'
@@ -353,9 +353,9 @@ const fetchNfts = async () => {
 }
 //useEffects ----------
 
-// useEffect(()=>{
-//   login();
-// }, [])
+useEffect(()=>{
+  login();
+}, [])
 
 useEffect(() => {
   if(taskId){
@@ -387,13 +387,17 @@ const Header = () => {
       justify="space-around"
       wrap="wrap"
       w="100%"
+      h="75px"
     >
-      <Box w="200px" h='75px'>
-        <Image w='inherit' h='inherit' src="white_artdrop.svg"></Image>
+      <Box w='50'>
+        <Flex justifyItems='center' alignItems='center'>
+          <Image src="logo.svg" width='50px' height='50px' /> 
+          <Text color="white" fontWeight="bold"> ArtDrop</Text>
+        </Flex>
       </Box>
-
+      
       <Box display={{ base: 'block', md: 'none' }} onClick={toggleMenu}>
-        {show ? <CloseIcon /> : <HamburgerIcon />}
+        {show ? <Image src="close.svg" /> : <Image src="hamburger.svg" />}
       </Box>
 
       <Box
@@ -406,10 +410,9 @@ const Header = () => {
           direction={['column', 'row', 'row', 'row']}
           pt={[4, 4, 0, 0]} color='white' fontWeight={8}
         >
-          {walletAddress &&  <Button colorScheme='blue' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button> }
-          {walletAddress &&  <Button colorScheme='blue' bgColor="transparent" onClick={() => handleLogOut()} isLast> Log Out </Button> }
-          {!walletAddress && <Button colorScheme='blue' bgColor="transparent" onClick={() => login()}> SignIn </Button>}
-         
+          {walletAddress &&  <Button margin='2px' variant="link" colorScheme='white' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button> }
+          &nbsp; &nbsp;
+          {walletAddress &&  <Button variant="link" colorScheme='white' bgColor="transparent" onClick={() => showMyNfts()} isLast> View NFTs </Button> }         
         </Flex>
       </Box>
     </Flex>
@@ -426,6 +429,7 @@ const Header = () => {
       </Head>
       <main className={styles.main}>
         <Header />
+        <Spacer />
       <Container marginTop='20px' maxW='550px' bg='#f5f5f5'   borderRadius='5px' > 
           <Flex direction='column' justifyContent='center'  minH='50vh'  >
           <Image
