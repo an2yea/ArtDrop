@@ -1,9 +1,9 @@
 import Head from 'next/head'
-import Image from 'next/image'
+// import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import { Button, ButtonGroup, Center, Container, Flex, Stack, Box ,Spacer, Textarea} from '@chakra-ui/react'
-
+import { Button, ButtonGroup, Center, Container, Flex, Stack, Box ,Spacer, Textarea, Image} from '@chakra-ui/react'
+import { Contract, providers, utils } from "ethers";
 import axios from 'axios'
 
 import { useState, useEffect } from 'react'
@@ -15,86 +15,103 @@ export default function Home() {
   //variables
 
   let replicate_private_key = process.env.NEXT_PUBLIC_REPLICATE_PVT_KEY;
+  let pinata_jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
+  let grad1 = 'linear-gradient(90deg, rgba(10,116,255,1) 0%, rgba(52,122,202,1) 38%, rgba(0,228,173,1) 100%)'
+  let grad2 = 'linear-gradient(90deg,rgba(0,228,173,1) 0%, rgba(52,122,202,1) 38%, rgba(10,116,255,1) 100%)'
   //States ----------
   const [prompt, setPrompt] = useState('')
   const [generated, setGenerated] = useState(false)
   const [generatingImg, setGeneratingImg] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+  const [minting, setMinting] = useState(false)
 
   //Functions --------
   let handlePromptChange = (e) => {
     let promptValue = e.target.value
     setPrompt(promptValue);
-    console.log(prompt);
   }
 
   let submitPrompt = async () => {
     setGeneratingImg(true);
+    setGenerated(false);
     await generateImage();
-    setGeneratingImg(false);
 
   }
 
-  let checkStatus = async (clear, id) =>{
-    let st =  await axios({
-        method: "get",
-        url: `https://api.replicate.com/v1/predictions/${id}`,
-        headers: {
-            'Authorization': `Token ${replicate_private_key}`,
-            'Content-Type': 'application/json',
-        }
-    })
-    console.log(st.data);
-    if(st.data.status =='succeeded'){
-        console.log(st.data.output[0]);
-        // genIpfsHash(st.data.output[0])
-        clearInterval(clear);
+let checkStatus = async (clear, id) =>{
 
+  const response = await fetch("/api/generation/" + id);
+  let responseData = await response.json();
+
+    console.log(responseData.status)
+    if(responseData.status =='succeeded'){
+          clearInterval(clear);
+          setImageUrl(responseData.output[0])
+          setGeneratingImg(false);
+          setGenerated(true);
+          setPrompt('')
+        console.log(responseData.output[0]);
+    //     // genIpfsHash(st.data.output[0])
     }
 }
 let generateImage = async() => {
 
   const body = {
-    prompt: `${prompt}`
+    prompt: `${prompt}`,
+    image_dimensions: '512x512'
   };
   let bod = JSON.stringify(body)
 
   const response = await fetch("/api/generation", {
     method: "POST",
     headers: {
-      'Authorization': `Token ${process.env.NEXT_PUBLIC_REPLICATE_PVT_KEY}`,
       'Content-Type': "application/json",
     },
     body: bod,
   });
-  const prediction = await response.json();
-  console.log(prediction)
+  const responseData = await response.json();
+  console.log(responseData.status)
+  let clear = setInterval(() => {
+    checkStatus(clear, responseData.id)
+  }, 2000);
+}
 
-    // let res = await axios({
-    //     method: "post",
-    //     url: "https://api.replicate.com/v1/predictions",
-    //     headers: {
-    //         'Authorization': `Token ${replicate_private_key}`,
-    //         'Content-Type': 'application/json',
-    //     },
-    //     data: {
-    //         'version': 'db21e45d3f7023abc2a46ee38a23973f6dce16bb082a930b0c49861f96d1e5bf',
-    //         'input':{
-    //             'prompt':  `${prompt}`
-    //         }
-    //     },
-    //   });
-
-    //   console.log(res.data);
-
-    //   let clear = setInterval(()=>{
-    //         checkStatus(clear, res.data.id);
-    //   }, [2000])
+const genIpfsHash = async() => {
+  try{
+    var data = JSON.stringify({
+      "pinataContent": {
+          "url": imageUrl
+      }
+      });
+  
+      var config = {
+      method: 'post',
+      url: 'https://api.pinata.cloud/pinning/pinJSONToIPFS',
+      headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${pinata_jwt}`
+      },
+      data : data
+      };
+  
+      const res = await axios(config);
+      return res.data.IpfsHash;
+  }
+  catch(err){
+    console.log(err)
+  }
+  
+}
+const mintNFT = async () => {
+  setMinting(true)
+  setGenerated(false)
+  let ipfsHash = await genIpfsHash();
+  console.log(ipfsHash)
+  setMinting(false)
+  setGenerated(true)c
 }
 
 
-
-  let grad1 = 'linear-gradient(90deg, rgba(10,116,255,1) 0%, rgba(52,122,202,1) 38%, rgba(0,228,173,1) 100%)'
-  let grad2 = 'linear-gradient(90deg,rgba(0,228,173,1) 0%, rgba(52,122,202,1) 38%, rgba(10,116,255,1) 100%)'
   return (
     <>
       <Head>
@@ -106,7 +123,16 @@ let generateImage = async() => {
       <main className={styles.main}>
       <Container marginTop='20px' maxW='550px' bg='#f5f5f5'   borderRadius='5px' > 
           <Flex direction='column' justifyContent='center'  minH='50vh'  >
-          <Textarea placeholder='Enter prompt to generate AI image' width='90%'margin = '10px auto' value={prompt} onChange = {handlePromptChange} />
+          <Image
+            boxSize='300px'
+            margin= '10px auto'
+            objectFit='cover'
+            src={imageUrl}
+            alt='Generate Image'
+            border='1px solid #1876F0'
+            borderRadius= '3px'
+          />
+          <Textarea placeholder='Enter prompt to generate AI image' width='90%'margin = '10px auto' value={prompt} onChange = {handlePromptChange} disabled = {generatingImg} />
           <Flex direction='row' padding="20px 0  20px 0"  justifyContent='space-around'>
             <Button width='40%' background= {grad1} variant='solid' color='white' _hover={{color:'white', opacity:'70%'}} 
             onClick={submitPrompt}
@@ -118,7 +144,8 @@ let generateImage = async() => {
             <Button width='40%' background= {grad2} variant='solid' color='white'
             _hover={{color:'white', opacity:'70%'}}
               disabled={!generated}
-              // isLoading={!generated}
+              onClick={mintNFT}
+              isLoading={minting}
             >
               Mint NFT
             </Button>
@@ -130,3 +157,14 @@ let generateImage = async() => {
     </>
   )
 }
+
+
+/**
+ 
+
+  ToDos
+
+  - Add placeholder image pre-mint
+  - Error handling
+  - Send more data to pinata than just image url, maybe iter version
+*/
