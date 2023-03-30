@@ -196,12 +196,6 @@ const login = async() => {
     setWalletAddress(address);
     console.log("Address is", address)
     onClose();
-
-    const result = await fetch(`https://api.covalenthq.com/v1/80001/address/${address}/balances_v2/?key=${process.env.NEXT_PUBLIC_COVALENT_APIKEY}`);
-    const balance = await result.json();
-    setTokens(balance.data.items);
-
-    console.log("generated is", generated)
   } catch (err){
     console.error(err);
   }
@@ -343,6 +337,7 @@ const fetchNfts = async () => {
         for(var i=0; i<bal;++i){
           const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
           const tokenURI = await nftContract.tokenURI(tokenId);
+          console.log(tokenURI);
           // const metadata = await fetch(`https://ipfs.io/ipfs/${tokenURI.substr(7)}`).then(response => response.json());
           let res = await fetch(tokenURI);
           res = await res.json()
