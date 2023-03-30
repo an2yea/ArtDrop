@@ -3,7 +3,7 @@ import React from 'react'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer, Tooltip} from '@chakra-ui/react'
+import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer, Tooltip, useMediaQuery} from '@chakra-ui/react'
 // import { CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
 import Link from 'next/Link';
 import { ethers, Contract, providers, utils } from "ethers";
@@ -12,6 +12,7 @@ import { GaslessOnboarding} from "@gelatonetwork/gasless-onboarding"
 import { useState, useEffect, use } from 'react'
 const inter = Inter({ subsets: ['latin'] })
 import { CONTRACT_ABI, CONTRACT_ADDRESS} from '../constants/contracts'
+import date from 'date-and-time';
 
 
 export default function Home() {
@@ -48,6 +49,8 @@ export default function Home() {
 
   const [show, setShow] = useState(false);
   const toggleMenu = () => setShow(!show);
+
+  const [isLargerThan800] = useMediaQuery('(min-width: 800px)')
 
   //Functions --------
   let handlePromptChange = (e) => {
@@ -104,9 +107,14 @@ let generateImage = async() => {
 
 const genIpfsHash = async() => {
   try{
+    const now = new Date();
+    let timestamp = date.format(now, 'YYYY/MM/DD HH:mm:ss'); 
     var data = JSON.stringify({
       "pinataContent": {
-          "url": imageUrl
+          "url": imageUrl,
+          "owner": walletAddress,
+          "iteration": "1",
+          "timestamp": timestamp
       }
       });
   
@@ -211,8 +219,10 @@ const fetchStatus = async(clear) => {
             clearInterval(clear)
             setMinting(false)
             setGenerated(true)
+            const now = new Date();
+            let timestamp = date.format(now, 'YYYY/MM/DD HH:mm:ss'); 
             if(task.task.taskState == 'ExecSuccess'){
-              let obj = {tokenId: 0, url: imageUrl}
+              let obj = {tokenId: 0, url: imageUrl, iteration:1, owner: walletAddress, timestamp: timestamp}
               setMynfts(oldNfts => [...oldNfts, obj])
             }
             setTimeout(()=>{
@@ -295,24 +305,17 @@ const renderNftCards = () => {
   if(mynfts!=null)return mynfts.map((nft, index) => 
           
       <div key={index}>
-          <GridItem w='100%'>
+          <GridItem w='80%'>
         <Card maxW='sm'>
           <CardBody>
             <Image
               src={nft.url}
-              alt='Green double couch with wooden legs'
+              alt='Your NFT'
               borderRadius='md'
             />
             <Stack mt='6' spacing='3'>
-              <Heading size='md'>Living room Sofa</Heading>
-              <Text>
-                This sofa is perfect for modern tropical spaces, baroque inspired
-                spaces, earthy toned spaces and for people who love a chic design with a
-                sprinkle of vintage design.
-              </Text>
-              <Text color='blue.600' fontSize='2xl'>
-                $450
-              </Text>
+              <Text size='md' color='blue.600'><b color='black'>Created at: </b>{nft.timestamp}</Text>
+              <Text size='md'><b color='black'>Created by: </b>{nft.owner}</Text>
             </Stack>
           </CardBody>
         </Card>
@@ -343,9 +346,10 @@ const fetchNfts = async () => {
           // const metadata = await fetch(`https://ipfs.io/ipfs/${tokenURI.substr(7)}`).then(response => response.json());
           let res = await fetch(tokenURI);
           res = await res.json()
-          nfts.push({tokenId, url: res.url});
+          if(res.iteration==1)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
         }
         console.log("My NFTs are", nfts);
+        nfts.reverse();
         setMynfts(nfts);
         setMynftsLoading(false)
 
@@ -506,7 +510,7 @@ const Header = () => {
                           <Stack alignContent='center' spacing='3'><Spinner size='xl' height='200px' width='200px' color = 'white' marginBottom='20px'/>
                         <Text display='block' color='white' textAlign='center'>Loading your NFTs...</Text></Stack>
                         
-                        </Center>:<Grid templateColumns='repeat(2, 1fr)' gap={6}>
+                        </Center>:<Grid gap = {3} templateColumns= {isLargerThan800? 'repeat(2, 1fr)' : 'repeat(1, 1fr)'}>
                                   {renderNftCards()}
                             </Grid>}
                             
@@ -542,9 +546,5 @@ const Header = () => {
   ToDos
 
   - Error handling
-  - Send more data to pinata than just image url, maybe iter version
   - Add fallback URLs for nft images saying: taking time to fetch from ipfs
-  - Decide what to show on display page
-  - view nfts media queries
-  - sort nfts by recent
 */
