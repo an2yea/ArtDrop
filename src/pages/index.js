@@ -30,7 +30,7 @@ export default function Home() {
   const [minting, setMinting] = useState(false)
   const [taskId, setTaskId] = useState('')
   const [taskStatus, setTaskStatus] = useState('')
-  const [mynfts, setMynfts] = useState(null)
+  const [mynfts, setMynfts] = useState([])
   const [myNftsLoading, setMynftsLoading] = useState(true)
 
   //States - Wallet
@@ -50,7 +50,7 @@ export default function Home() {
   const toggleMenu = () => setShow(!show);
 
   const [isLargerThan800] = useMediaQuery('(min-width: 800px)')
-  const iter = 2;
+  const iter = 4;
 
   //Functions --------
   let handlePromptChange = (e) => {
@@ -296,7 +296,7 @@ const showMyNfts = async () => {
 const renderNftCards = () => {
 
   // const  = [{test:'test'}, {test:'test'}, {test:'test'}, {test:'test'}]
-  if(mynfts!=null)return mynfts.map((nft, index) => 
+  if(mynfts.length)return mynfts.map((nft, index) => 
           
       <div key={index}>
           <GridItem w='80%'>
@@ -316,6 +316,13 @@ const renderNftCards = () => {
         </GridItem>
       </div>
   )
+  else{
+    return <GridItem><Alert margin='15px 0px' borderRadius='3px' status='info'>
+    <AlertIcon />
+    <AlertTitle>You don't have any NFTs yet</AlertTitle>
+    <AlertDescription>Please go back to the minting screen to create your first NFT!</AlertDescription>
+  </Alert></GridItem>
+  }
 }
 
 
@@ -416,7 +423,7 @@ const Header = () => {
         >
           {walletAddress &&  <Tooltip label='Click to copy address'><Button margin='2px' variant="link" colorScheme='white' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button></Tooltip> }
           &nbsp; &nbsp;
-          {walletAddress &&  <Button variant="link" colorScheme='white' bgColor="transparent" onClick={() => showMyNfts()} isLast> View NFTs </Button> }         
+          {walletAddress &&  <Button  variant="link" colorScheme='white' bgColor="transparent" onClick={() => showMyNfts()} isLast> View NFTs </Button> }         
         </Flex>
       </Box>
     </Flex>
@@ -450,7 +457,7 @@ const Header = () => {
         />
         <MenuList>
           <MenuItem onClick={() => showMyNfts()} height = '50px'>
-            {walletAddress &&  <Button variant="link" color='#212732' fontSize='15px'  bgColor="transparent"> View NFTs </Button> }         
+            {walletAddress &&  <Button  variant="link" color='#212732' fontSize='15px'  bgColor="transparent"> View NFTs </Button> }         
           </MenuItem>
           <MenuItem onClick={() => navigator.clipboard.writeText(`${walletAddress}`)} height='50px'>
           {walletAddress &&  <Button  variant="link" color='#212732' fontSize='15px' >Copy Wallet Address</Button> }
@@ -549,7 +556,7 @@ const Header = () => {
                           <Stack alignContent='center' spacing='3'><Spinner size='xl' height='200px' width='200px' color = 'white' marginBottom='20px'/>
                         <Text display='block' color='white' textAlign='center'>Loading your NFTs...</Text></Stack>
                         
-                        </Center>:<Grid gap = {3} templateColumns= {isLargerThan800? 'repeat(2, 1fr)' : 'repeat(1, 1fr)'}>
+                        </Center>:<Grid gap = {3} templateColumns= {mynfts.length?(isLargerThan800? 'repeat(2, 1fr)' : 'repeat(1, 1fr)'):'repeat(1, 1fr)'}>
                                   {renderNftCards()}
                             </Grid>}
                             
@@ -583,5 +590,4 @@ const Header = () => {
   - Error handling
   - Add fallback URLs for nft images saying: taking time to fetch from ipfs
   - Flow chart
-  - What to show in case of no NFTs minted yet
 */
