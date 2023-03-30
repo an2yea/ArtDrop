@@ -169,8 +169,8 @@ const login = async() => {
     const loginConfig = {
       domains: [window.location.origin],
       chain : {
-        id: 80001,
-        rpcUrl: "https://wiser-alien-morning.matic-testnet.discover.quiknode.pro/c2f6cfc05517853e094ad7ea47188326625f20b5/"
+        id: 84531,
+        rpcUrl: "https://goerli.base.org"
       },
       openLogin: {
         redirectUrl: [window.location.origin],
