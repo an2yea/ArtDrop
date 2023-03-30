@@ -5,7 +5,6 @@ import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
 import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer, Tooltip, useMediaQuery, Menu, MenuButton, MenuList, MenuItem, IconButton} from '@chakra-ui/react'
 import { HamburgerIcon } from '@chakra-ui/icons';
-import Link from 'next/Link';
 import { ethers, Contract, providers, utils } from "ethers";
 import axios from 'axios'
 import { GaslessOnboarding} from "@gelatonetwork/gasless-onboarding"
