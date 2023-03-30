@@ -50,7 +50,7 @@ export default function Home() {
   const toggleMenu = () => setShow(!show);
 
   const [isLargerThan800] = useMediaQuery('(min-width: 800px)')
-  const iter = 1;
+  const iter = 2;
 
   //Functions --------
   let handlePromptChange = (e) => {
@@ -349,7 +349,7 @@ const fetchNfts = async () => {
           if(res.iteration==iter)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
         }
         console.log("My NFTs are", nfts);
-        nfts.reverse();
+        if(nfts.length)nfts.reverse();
         setMynfts(nfts);
         setMynftsLoading(false)
 
@@ -381,6 +381,7 @@ useEffect(() => {
 
 useEffect(()=>{
   if(walletAddress){
+    setMynfts([])
     fetchNfts();
   }
 }, [walletAddress])
