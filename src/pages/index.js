@@ -167,7 +167,7 @@ const login = async() => {
     setLoginLoading(true);
     const gaslessWalletConfig = { apiKey: process.env.NEXT_PUBLIC_GASLESSWALLET_KEY};
     const loginConfig = {
-      domains: ["http://localhost:3000/"],
+      domains: [window.location.origin],
       chain : {
         id: 80001,
         rpcUrl: "https://wiser-alien-morning.matic-testnet.discover.quiknode.pro/c2f6cfc05517853e094ad7ea47188326625f20b5/"
@@ -579,7 +579,9 @@ const Header = () => {
 
   ToDos
 
+  - Add logout option and send to landing page 
   - Error handling
   - Add fallback URLs for nft images saying: taking time to fetch from ipfs
   - Flow chart
+  - What to show in case of no NFTs minted yet
 */
