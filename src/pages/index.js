@@ -62,7 +62,7 @@ export default function Home() {
     console.log("gen is", generated)
     setGeneratingImg(true);
     await generateImage();
-    // setGenerated(false);
+    setGenerated(false);
 
 
   }
