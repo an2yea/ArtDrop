@@ -3,8 +3,8 @@ import React from 'react'
 // import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer, Tooltip, useMediaQuery} from '@chakra-ui/react'
-// import { CloseIcon, HamburgerIcon } from '@chakra-ui/icons';
+import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, Box, Textarea, Image, Alert, AlertDescription, AlertIcon, AlertTitle, DrawerOverlay, Drawer, DrawerBody, DrawerContent, useDisclosure, Spinner, Center, Grid, GridItem, Stack, Heading, Spacer, Tooltip, useMediaQuery, Menu, MenuButton, MenuList, MenuItem, IconButton} from '@chakra-ui/react'
+import { HamburgerIcon } from '@chakra-ui/icons';
 import Link from 'next/Link';
 import { ethers, Contract, providers, utils } from "ethers";
 import axios from 'axios'
@@ -51,6 +51,7 @@ export default function Home() {
   const toggleMenu = () => setShow(!show);
 
   const [isLargerThan800] = useMediaQuery('(min-width: 800px)')
+  const iter = 1;
 
   //Functions --------
   let handlePromptChange = (e) => {
@@ -113,7 +114,7 @@ const genIpfsHash = async() => {
       "pinataContent": {
           "url": imageUrl,
           "owner": walletAddress,
-          "iteration": "1",
+          "iteration": iter,
           "timestamp": timestamp
       }
       });
@@ -222,7 +223,7 @@ const fetchStatus = async(clear) => {
             const now = new Date();
             let timestamp = date.format(now, 'YYYY/MM/DD HH:mm:ss'); 
             if(task.task.taskState == 'ExecSuccess'){
-              let obj = {tokenId: 0, url: imageUrl, iteration:1, owner: walletAddress, timestamp: timestamp}
+              let obj = {tokenId: 0, url: imageUrl, iteration:iter, owner: walletAddress, timestamp: timestamp}
               setMynfts(oldNfts => [...oldNfts, obj])
             }
             setTimeout(()=>{
@@ -346,7 +347,7 @@ const fetchNfts = async () => {
           // const metadata = await fetch(`https://ipfs.io/ipfs/${tokenURI.substr(7)}`).then(response => response.json());
           let res = await fetch(tokenURI);
           res = await res.json()
-          if(res.iteration==1)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
+          if(res.iteration==iter)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
         }
         console.log("My NFTs are", nfts);
         nfts.reverse();
@@ -385,8 +386,8 @@ useEffect(()=>{
   }
 }, [walletAddress])
 const Header = () => {
-  
-  return (
+  if(isLargerThan800)return (
+ 
     <Flex
       mb={8}
       p={6} 
@@ -405,7 +406,7 @@ const Header = () => {
       </Box>
       
       <Box display={{ base: 'block', md: 'none' }} onClick={toggleMenu}>
-        {show ? <Image src="close.svg" /> : <Image src="hamburger.svg" />}
+        {show ? <Image boxSize='30px' src="close.svg" /> : <Image src="hamburger.svg" />}
       </Box>
 
       <Box
@@ -425,6 +426,49 @@ const Header = () => {
       </Box>
     </Flex>
   );
+  else{
+    return (
+
+    <Flex
+    mb={8}
+    p={6} 
+    as="nav"
+    align="center"
+    justify="space-around"
+    wrap="wrap"
+    w="100%"
+    h="75px"
+  >
+    <Box w='50'>
+      <Flex justifyItems='center' alignItems='center'>
+        <Image src="logo.svg" width='50px' height='50px' /> 
+        <Text color="white" fontWeight="bold"> ArtDrop</Text>
+      </Flex>
+    </Box>
+    <Menu>
+        <MenuButton
+          as={IconButton}
+          aria-label='Options'
+          icon={<HamburgerIcon />}
+          variant='outline'
+          color='white'
+        />
+        <MenuList>
+          <MenuItem onClick={() => showMyNfts()} height = '50px'>
+            {walletAddress &&  <Button variant="link" color='#212732' fontSize='15px'  bgColor="transparent"> View NFTs </Button> }         
+          </MenuItem>
+          <MenuItem onClick={() => navigator.clipboard.writeText(`${walletAddress}`)} height='50px'>
+          {walletAddress &&  <Button  variant="link" color='#212732' fontSize='15px' >Copy Wallet Address</Button> }
+          </MenuItem>
+        </MenuList>
+      </Menu>
+  </Flex>
+
+
+  
+    )
+  }
+  
 };
 
   return (
