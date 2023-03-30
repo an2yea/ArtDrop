@@ -572,11 +572,9 @@ const Header = () => {
           <DrawerBody  background={grad1}>
             <Center margin='auto' height='100vh' >
             <Spinner size='xl' height='200px' width='200px' color = 'white'/>
-
             </Center>
-            
           </DrawerBody>
-        </DrawerContent>
+        </DrawerContent> 
       </Drawer>
       </main>
     </>
@@ -591,4 +589,5 @@ const Header = () => {
 
   - Error handling
   - Add fallback URLs for nft images saying: taking time to fetch from ipfs
+  - Flow chart
 */
