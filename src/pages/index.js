@@ -396,7 +396,7 @@ const Header = () => {
       justify="space-around"
       wrap="wrap"
       w="100%"
-      h="75px"
+      h="76px"
     >
       <Box w='50'>
         <Flex justifyItems='center' alignItems='center'>
@@ -560,15 +560,12 @@ const Header = () => {
                             
                       </Container>
                       
-                      {/* </Center> */}
-                      
                     </DrawerBody>
                   </DrawerContent>
                 </Drawer>
       <Drawer placement='top' onClose={onClose} isOpen={isOpen} size='full'>
         <DrawerOverlay />
         <DrawerContent>
-          {/* <DrawerHeader>{`${size} drawer contents`}</DrawerHeader> */}
           <DrawerBody  background={grad1}>
             <Center margin='auto' height='100vh' >
             <Spinner size='xl' height='200px' width='200px' color = 'white'/>
