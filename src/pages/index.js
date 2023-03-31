@@ -286,7 +286,8 @@ const renderAlert = () => {
 
 const handleLogOut = async() =>{
   await gobMethod.logout();
-  setWalletAddress();
+  setWalletAddress('');
+  window.location.replace('https://artdropnft.vercel.app/')
 }
 
 const showMyNfts = async () => {
@@ -346,7 +347,7 @@ const fetchNfts = async () => {
           const tokenURI = await nftContract.tokenURI(tokenId);
           console.log(tokenURI);
           // const metadata = await fetch(`https://ipfs.io/ipfs/${tokenURI.substr(7)}`).then(response => response.json());
-          let res = await fetch(tokenURI);
+          let res = await fetch(tokenURI); 
           res = await res.json()
           if(res.iteration==iter)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
         }
@@ -420,10 +421,12 @@ const Header = () => {
           justify={['center', 'space-between', 'flex-start', 'flex-end']}
           direction={['column', 'row', 'row', 'row']}
           pt={[4, 4, 0, 0]} color='white' fontWeight={8}
+          gap={10}
         >
           {walletAddress &&  <Tooltip label='Click to copy address'><Button margin='2px' variant="link" colorScheme='white' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button></Tooltip> }
-          &nbsp; &nbsp;
-          {walletAddress &&  <Button  variant="link" colorScheme='white' bgColor="transparent" onClick={() => showMyNfts()} isLast> View NFTs </Button> }         
+      
+          {walletAddress &&  <Button  variant="link" colorScheme='white' bgColor="transparent" onClick={() => showMyNfts()}  margin='2px'> View NFTs </Button> }         
+          {walletAddress &&  <Button  variant="link" colorScheme='white' bgColor="transparent" onClick={() => handleLogOut()} isLast  margin='2px'> Logout </Button> }  
         </Flex>
       </Box>
     </Flex>
@@ -461,6 +464,9 @@ const Header = () => {
           </MenuItem>
           <MenuItem onClick={() => navigator.clipboard.writeText(`${walletAddress}`)} height='50px'>
           {walletAddress &&  <Button  variant="link" color='#212732' fontSize='15px' >Copy Wallet Address</Button> }
+          </MenuItem>
+          <MenuItem onClick={() => handleLogOut()} height = '50px'>
+            {walletAddress &&  <Button  variant="link" color='#212732' fontSize='15px'  bgColor="transparent"> Logout </Button> }         
           </MenuItem>
         </MenuList>
       </Menu>
@@ -585,7 +591,7 @@ const Header = () => {
  
 
   ToDos
-
+  - Fix format of buidl, add demo link and video link
   - Add logout option and send to landing page 
   - Error handling
   - Add fallback URLs for nft images saying: taking time to fetch from ipfs
