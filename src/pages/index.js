@@ -348,8 +348,8 @@ const Header = () => {
     >
       <Box w='50'>
         <Flex justifyItems='center' alignItems='center'>
-          <Image src="logo.svg" width='50px' height='50px' /> 
-          <Text color="white" fontWeight="bold"> Celitra </Text>
+          <Image src="celitra.svg" width='50px' height='50px' /> 
+          <Text color="white" fontWeight="bold"> &nbsp; Celitra </Text>
         </Flex>
       </Box>
       
@@ -391,7 +391,7 @@ const Header = () => {
   >
     <Box w='50'>
       <Flex justifyItems='center' alignItems='center'>
-        <Image src="logo.svg" width='50px' height='50px' /> 
+        <Image src="celitra.svg" width='50px' height='50px' /> 
         <Text color="white" fontWeight="bold"> Celitra </Text>
       </Flex>
     </Box>
@@ -430,7 +430,7 @@ const Header = () => {
         <title> Celitra </title>
         <meta name="description" content=" Enter Web3 with a single click" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/logo.svg" />
+        <link rel="icon" href="/celitra.svg" />
       </Head>
       <main className={styles.main}>
         <Header />
