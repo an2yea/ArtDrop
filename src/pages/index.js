@@ -15,6 +15,7 @@ import date from 'date-and-time';
 import { PARTICLE_PROJECT_ID, PARTICLE_CLIENT_KEY, PARTICLE_APP_ID } from '@/constants/particleConstants'
 import {ParticleProvider} from "@particle-network/provider"
 import { ParticleNetwork, WalletEntryPosition } from "@particle-network/auth";
+import Link from 'next/link'
 
 
 
@@ -84,7 +85,6 @@ export default function Home() {
     setGeneratingImg(true);
     await generateImage();
     setGenerated(false);
-
 
   }
 
@@ -160,11 +160,8 @@ const genIpfsHash = async() => {
 }
 const mintNFT = async () => {
 
-  //gen ipfs hash
   setMinting(true)
   setGenerated(false)
-  // setTaskStatus('Initialised')
-  // setGeneratingImg(true)
   let ipfsHash = await genIpfsHash();
   console.log(ipfsHash);
 
@@ -179,10 +176,10 @@ const mintNFT = async () => {
     signer
   )
 
-  const tx = await contract.mintNFT(walletAddress, tokenURI);
+  // const tx = await contract.mintNFT(walletAddress, tokenURI);
   setTaskStatus('Initialised')
   console.log("Task status initialised", taskStatus)
-  await tx.wait();
+  // await tx.wait();
   setTaskStatus('ExecSuccess');
   console.log("Task succeeded", taskStatus)
   setMinting(false);  
@@ -194,20 +191,15 @@ const login = async() => {
   try{
      onOpen();
     setLoginLoading(true);
-
     const particleProvider = new ParticleProvider(particle.auth);
     const provider = new ethers.providers.Web3Provider(particleProvider, "any");
-    console.log(provider);
     const userInfo = await particle.auth.login();
-    console.log(userInfo);
     setLoginLoading(false);
-
     const accounts = await provider.listAccounts();
-    console.log(accounts[0]);
     setWalletAddress(accounts[0]);
     setWeb3AuthProvider(provider);
     console.log("Particle Provider", web3AuthProvider);
-    console.log("Address is",walletAddress)
+    console.log("Address is", walletAddress)
     onClose();
   } catch (err){
     console.error(err);
@@ -226,7 +218,7 @@ const renderAlert = () => {
       return <Alert margin='15px 0px'  borderRadius='3px' status='success'>
                 <AlertIcon />
                 <AlertTitle>NFT minted!</AlertTitle>
-                <AlertDescription>Your AI image has been ArtDropped to your wallet</AlertDescription>
+                <AlertDescription>Your AI image has been ArtDropped to your wallet. Check your transaction at <Link> "https://mumbai.polygonscan.com/address/${walletAddress}"</Link></AlertDescription>
               </Alert>
     case 'Cancelled':
       return <Alert margin='15px 0px' borderRadius='3px' status='error'>
@@ -240,7 +232,7 @@ const renderAlert = () => {
 
 
 const handleLogOut = async() =>{
-  await gobMethod.logout();
+  await particle.auth.logout();
   setWalletAddress('');
   window.location.replace('https://artdropnft.vercel.app/')
 }
@@ -251,7 +243,6 @@ const showMyNfts = async () => {
 
 const renderNftCards = () => {
   if(mynfts.length)return mynfts.map((nft, index) => 
-          
       <div key={index}>
           <GridItem w='80%'>
         <Card maxW='sm'>
@@ -281,25 +272,26 @@ const renderNftCards = () => {
 
 
 const fetchNfts = async () => {
+    console.log("fetching nfts");
       try{
       if(web3AuthProvider != undefined){
+        console.log("provider is defined")
         const nfts = [];
         const provider = new ethers.providers.Web3Provider(web3AuthProvider);
-        console.log(provider);
         const signer = await provider.getSigner();
-        console.log(CONTRACT_ABI);
-        console.log(CONTRACT_ADDRESS)
-        console.log(signer)
         const nftContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
+        console.log("Still in fetchNft", walletAddress);
+        let owner = await nftContract.owner();
+        console.log(owner);
         let bal = await nftContract.balanceOf(walletAddress);
+        console.log(bal);
         console.log('Balance is', bal.toNumber());
+ 
 
         for(var i=0; i<bal;++i){
           const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
           const tokenURI = await nftContract.tokenURI(tokenId);
           console.log(tokenURI);
-          // const metadata = await fetch(`https://ipfs.io/ipfs/${tokenURI.substr(7)}`).then(response => response.json());
           let res = await fetch(tokenURI); 
           res = await res.json()
           if(res.iteration==iter)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
@@ -311,6 +303,7 @@ const fetchNfts = async () => {
 
       }
     }catch(err){
+      console.log("error fetching NFTs ")
       console.log(err);
     }
 
@@ -329,6 +322,7 @@ useEffect(() => {
 
 useEffect(()=>{
   if(walletAddress){
+    console.log("Wallet address changed")
     setMynfts([])
     fetchNfts();
   }
