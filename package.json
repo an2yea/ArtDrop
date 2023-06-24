@@ -17,6 +17,7 @@
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@openzeppelin/contracts": "^4.9.2",
     "@particle-network/auth": "^0.14.1",
+    "@particle-network/biconomy": "^0.1.4",
     "@particle-network/provider": "^0.14.1",
     "axios": "^1.4.0",
     "date-and-time": "^2.4.3",

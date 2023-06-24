@@ -7,14 +7,14 @@ import {Card, CardHeader, CardBody, CardFooter, Button, Container, Flex, Text, B
 import { HamburgerIcon } from '@chakra-ui/icons';
 import { ethers, Contract, providers, utils } from "ethers";
 import axios from 'axios'
-import { GaslessOnboarding} from "@gelatonetwork/gasless-onboarding"
 import { useState, useEffect, use } from 'react'
 const inter = Inter({ subsets: ['latin'] })
 import { CONTRACT_ABI, CONTRACT_ADDRESS} from '../constants/contracts'
 import date from 'date-and-time';
-import { PARTICLE_PROJECT_ID, PARTICLE_CLIENT_KEY, PARTICLE_APP_ID } from '@/constants/particleConstants'
+import { PARTICLE_PROJECT_ID, PARTICLE_CLIENT_KEY, PARTICLE_APP_ID, BICONOMY_API_KEY } from '@/constants/particleConstants'
 import {ParticleProvider} from "@particle-network/provider"
 import { ParticleNetwork, WalletEntryPosition } from "@particle-network/auth";
+import {SmartAccount} from '@particle-network/biconomy'
 
 
 export default function Home() {
@@ -39,6 +39,7 @@ export default function Home() {
     },
   });
 
+
   let pinata_jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
   let grad1 = 'linear-gradient(90deg, rgba(10,116,255,1) 0%, rgba(52,122,202,1) 38%, rgba(0,228,173,1) 100%)'
   let grad2 = 'linear-gradient(90deg,rgba(0,228,173,1) 0%, rgba(52,122,202,1) 38%, rgba(10,116,255,1) 100%)'
@@ -62,6 +63,7 @@ export default function Home() {
   const [size, setSize] = useState('md')
   const { isOpen, onOpen, onClose } = useDisclosure()
   const obj = useDisclosure()
+  const [smartAccount, setSmartAccount] = useState();
   // console.log("closure", obj.isOpen)
   let isOpenM = obj.isOpen, onOpenM = obj.onOpen, onCloseM = obj.onClose;
 
@@ -170,52 +172,104 @@ const mintNFT = async () => {
 
   let tokenURI = `https://ipfs.io/ipfs/${ipfsHash}`
   const signer = web3AuthProvider.getSigner();
-  console.log(signer.getAddress());
-  console.log(signer);
+  let iface = new utils.Interface(CONTRACT_ABI);
 
-  let contract = new Contract (
-    CONTRACT_ADDRESS,
-    CONTRACT_ABI, 
-    signer
-  )
-  console.log(contract);
-  const tx = await contract.mintNFT(walletAddress, tokenURI);
-  const balance = await contract.balanceOf(walletAddress);
-  console.log("Balance in mintNFT" , balance);
-  const owner = await contract.owner();
-  console.log("owner is", owner)
-  setTaskStatus('Initialised')
-  console.log("Task status initialised", taskStatus)
-  await tx.wait();
+  let x = iface.encodeFunctionData("mintNFT", [walletAddress, tokenURI]);
+  const tx = {
+    to: CONTRACT_ADDRESS,
+    data:x
+  }
+
+  console.log(tx);
+  console.log(smartAccount);
+
+  setTaskStatus('Initialised');
+  // smartAccount.on('txHashGenerated', (response) => {
+  //   console.log('txHashGenerated event received via emitter', response);
+  // });
+  // smartAccount.on('onHashChanged', (response) => {
+  //   console.log('onHashChanged event received via emitter', response);
+  // });
+  // // Event listener that gets triggered once a transaction is mined
+  // smartAccount.on('txMined', (response) => {
+  //   console.log('txMined event received via emitter', response);
+  // });
+  // // Event listener that gets triggered on any error
+  // smartAccount.on('error', (response) => {
+  //   console.log('error event received via emitter', response);
+  // });
+
+  const txHash = await smartAccount.sendGaslessTransaction(tx);
+  console.log(txHash);
   setTaskStatus('ExecSuccess');
-  console.log("Task succeeded", taskStatus)
   setMinting(false);  
-  console.log("hash of mint", tx);
+
+  // let contract = new Contract (
+  //   CONTRACT_ADDRESS,
+  //   CONTRACT_ABI, 
+  //   signer
+  // )
+  // console.log(contract);
+  // const tx = await contract.mintNFT(walletAddress, tokenURI);
+  // const balance = await contract.balanceOf(walletAddress);
+  // console.log("Balance in mintNFT" , balance);
+  // const owner = await contract.owner();
+  // console.log("owner is", owner)
+  // setTaskStatus('Initialised')
+  // console.log("Task status initialised", taskStatus)
+  // await tx.wait();
+  // setTaskStatus('ExecSuccess');
+  // console.log("Task succeeded", taskStatus)
+  // setMinting(false);  
+  // console.log("hash of mint", tx);
   } catch (err){
     console.error(err);
   }
 }
 
+const initialiseSmartAccount= async () =>{
+  console.log("In smartAccount" , web3AuthProvider.provider);
+  const smartAccount = new SmartAccount(web3AuthProvider.provider, {
+    projectId: PARTICLE_PROJECT_ID,
+    clientKey: PARTICLE_CLIENT_KEY,
+    appId: PARTICLE_APP_ID,
+    networkConfig: [
+        { dappAPIKey: BICONOMY_API_KEY, chainId: 80001 },
+    ],
+});
+  console.log(smartAccount);
+  const account = await smartAccount.getAddress();
+  console.log("Smart Account Address" , account);
+  setSmartAccount(smartAccount);
+}
+
+const initialiseParticleProvider = async () => {
+  const particleProvider = new ParticleProvider(particle.auth);
+  const provider = new ethers.providers.Web3Provider(particleProvider, "any");
+  setWeb3AuthProvider(provider);
+}
+
+useEffect(() => {
+  if(web3AuthProvider){
+    console.log("Web2uath provid", web3AuthProvider);
+    login();
+  }
+}, web3AuthProvider)
 const login = async() => {
 
   try{
      onOpen();
     setLoginLoading(true);
-    const particleProvider = new ParticleProvider(particle.auth);
-    const provider = new ethers.providers.Web3Provider(particleProvider, "any");
+    console.log("Actually signign")
     const userInfo = await particle.auth.login();
     setLoginLoading(false);
-    const accounts = await provider.listAccounts();
+    const accounts = await web3AuthProvider.listAccounts();
     setWalletAddress(accounts[0]);
-    setWeb3AuthProvider(provider);
+    initialiseSmartAccount();
     onClose();
   } catch (err){
     console.error(err);
   }
-}
-
-const openWallet = async () => {
-  await particle.openWallet();
 }
 
 const renderAlert = () => {
@@ -292,25 +346,25 @@ const fetchNfts = async () => {
       try{
       if(web3AuthProvider != undefined){
         console.log("provider is defined")
-        const nfts = []; //all of the nfts that you own
-        const signer = web3AuthProvider.getSigner();
-        const nftContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        let owner = await nftContract.owner();
-        console.log("owner", owner);
-        let bal = await nftContract.balanceOf(walletAddress);
-        console.log('Balance is', bal.toNumber());
-        for(var i=0; i<bal;++i){
-          const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
-          const tokenURI = await nftContract.tokenURI(tokenId);
-          console.log(tokenURI);
-          let res = await fetch(tokenURI); 
-          res = await res.json()
-          if(res.iteration==iter)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
-        }
-        console.log("My NFTs are", nfts);
-        if(nfts.length)nfts.reverse();
-        setMynfts(nfts);
-        setMynftsLoading(false)
+        // const nfts = []; //all of the nfts that you own
+        // const signer = web3AuthProvider.getSigner();
+        // const nftContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        // let owner = await nftContract.owner();
+        // console.log("owner", owner);
+        // let bal = await nftContract.balanceOf(walletAddress);
+        // console.log('Balance is', bal.toNumber());
+        // for(var i=0; i<bal;++i){
+        //   const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
+        //   const tokenURI = await nftContract.tokenURI(tokenId);
+        //   console.log(tokenURI);
+        //   let res = await fetch(tokenURI); 
+        //   res = await res.json()
+        //   if(res.iteration==iter)nfts.push({tokenId, url: res.url, iteration:res.iteration, timestamp: res.timestamp, owner: res.owner});
+        // }
+        // console.log("My NFTs are", nfts);
+        // if(nfts.length)nfts.reverse();
+        // setMynfts(nfts);
+        // setMynftsLoading(false)
 
       }
     } catch(err) {
@@ -321,7 +375,7 @@ const fetchNfts = async () => {
 //useEffects ----------
 
 useEffect(()=>{
-  login();
+  initialiseParticleProvider();
 }, [])
 
 
@@ -375,7 +429,7 @@ const Header = () => {
           {walletAddress &&  <Tooltip label='Click to copy address'><Button margin='2px' variant="link" colorScheme='white' bgColor="transparent" onClick={() => navigator.clipboard.writeText(`${walletAddress}`)}>{walletAddress} </Button></Tooltip> }
       
           {walletAddress &&  <Button  variant="link" colorScheme='white' bgColor="transparent" onClick={() => showMyNfts()}  margin='2px'> View NFTs </Button> }         
-          {walletAddress &&  <Button  variant="link" colorScheme='white' bgColor="transparent" onClick={() => handleLogOut()} isLast  margin='2px'> Logout </Button> }  
+          {walletAddress &&  <Button  variant="link" colorScheme='white' bgColor="transparent" onClick={() => handleLogOut()}  margin='2px'> Logout </Button> }  
         </Flex>
       </Box>
     </Flex>
