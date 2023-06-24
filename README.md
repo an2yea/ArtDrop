@@ -8,7 +8,7 @@ Celitra allows users to sign into the Web3 network without any Metamask/EOA wall
 
 ### Need for the product 
 
-The major difference from Web2 that keeps peeople on the fence about joining Web3 is 
+The major difference from Web2 that keeps people on the fence about joining Web3 is 
 1. Lack of understanding of wallet creation and seedless phrases management
 2. Jargon surrounding Minting, NFTs, Proof-of-Stake and a million terms that seem intimidating
 3. Looks like something that's relevant only for traders, and not for people who just want to have fun 

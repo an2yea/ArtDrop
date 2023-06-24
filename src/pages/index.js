@@ -29,7 +29,7 @@ export default function Home() {
     wallet: {   
       displayWalletEntry: true, 
       defaultWalletEntryPosition: WalletEntryPosition.BR, 
-      uiMode: "dark",  
+      uiMode: "light",  
       supportChains: [{id:80001, name:"Polygon"}], 
       customStyle: {}, 
     },
@@ -212,6 +212,10 @@ const login = async() => {
   } catch (err){
     console.error(err);
   }
+}
+
+const openWallet = async () => {
+  await particle.openWallet();
 }
 
 const renderAlert = () => {
