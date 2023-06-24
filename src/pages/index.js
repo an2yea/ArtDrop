@@ -12,11 +12,33 @@ import { useState, useEffect, use } from 'react'
 const inter = Inter({ subsets: ['latin'] })
 import { CONTRACT_ABI, CONTRACT_ADDRESS} from '../constants/contracts'
 import date from 'date-and-time';
+import { PARTICLE_PROJECT_ID, PARTICLE_CLIENT_KEY, PARTICLE_APP_ID } from '@/constants/particleConstants'
+import {ParticleProvider} from "@particle-network/provider"
+import { ParticleNetwork, WalletEntryPosition } from "@particle-network/auth";
+
 
 
 export default function Home() {
 
   //variables
+  const particle = new ParticleNetwork({
+    projectId: PARTICLE_PROJECT_ID,
+    clientKey: PARTICLE_CLIENT_KEY,
+    appId: PARTICLE_APP_ID,
+    chainName: "Polygon",
+    chainId: 80001, 
+    wallet: {   
+      displayWalletEntry: true, 
+      defaultWalletEntryPosition: WalletEntryPosition.BR, 
+      uiMode: "dark",  
+      supportChains: [{id:80001, name:"Polygon"}], 
+      customStyle: {}, 
+    },
+    securityAccount: { 
+      promptSettingWhenSign: 1,
+      promptMasterPasswordSettingWhenLogin: 1
+    },
+  });
 
   let replicate_private_key = process.env.NEXT_PUBLIC_REPLICATE_PVT_KEY;
   let pinata_jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
@@ -34,12 +56,11 @@ export default function Home() {
   const [myNftsLoading, setMynftsLoading] = useState(true)
 
   //States - Wallet
-  const [loginLoding, setLoginLoading] = useState(false)
+  const [loginLoading, setLoginLoading] = useState(false)
   const [walletAddress, setWalletAddress] = useState();
   const [gobMethod, setGOBMethod] = useState(null);
   const [web3AuthProvider, setWeb3AuthProvider] = useState(null)
   const [tokens, setTokens] = useState([]);
-  const [gw, setGW] = useState();
   const [size, setSize] = useState('md')
   const { isOpen, onOpen, onClose } = useDisclosure()
   const obj = useDisclosure()
@@ -132,7 +153,8 @@ const genIpfsHash = async() => {
       return res.data.IpfsHash;
   }
   catch(err){
-    console.log(err)
+    console.log("error in creating hash")
+    console.log(err);
   }
   
 }
@@ -141,23 +163,30 @@ const mintNFT = async () => {
   //gen ipfs hash
   setMinting(true)
   setGenerated(false)
-  setTaskStatus('Initialised')
+  // setTaskStatus('Initialised')
   // setGeneratingImg(true)
   let ipfsHash = await genIpfsHash();
-  console.log(ipfsHash)
+  console.log(ipfsHash);
 
-  //Gasless transaction
-      let iface = new ethers.utils.Interface(CONTRACT_ABI);
-      let tokenURI = `https://ipfs.io/ipfs/${ipfsHash}`
-      let recipient = walletAddress;
-      let tx = iface.encodeFunctionData("mintNFT", [ recipient,  tokenURI])
-      
-      const temp = await gw.sponsorTransaction(
-        CONTRACT_ADDRESS,
-        tx
-      );
-      console.log(temp)
-      setTaskId(temp.taskId);
+  let tokenURI = `https://ipfs.io/ipfs/${ipfsHash}`
+  const signer = web3AuthProvider.getSigner();
+  console.log(signer.getAddress());
+  console.log(signer);
+
+  let contract = new Contract (
+    CONTRACT_ADDRESS,
+    CONTRACT_ABI, 
+    signer
+  )
+
+  const tx = await contract.mintNFT(walletAddress, tokenURI);
+  setTaskStatus('Initialised')
+  console.log("Task status initialised", taskStatus)
+  await tx.wait();
+  setTaskStatus('ExecSuccess');
+  console.log("Task succeeded", taskStatus)
+  setMinting(false);  
+  console.log(tx);
 }
 
 const login = async() => {
@@ -165,99 +194,33 @@ const login = async() => {
   try{
      onOpen();
     setLoginLoading(true);
-    const gaslessWalletConfig = { apiKey: process.env.NEXT_PUBLIC_GASLESSWALLET_KEY};
-    const loginConfig = {
-      domains: [window.location.origin],
-      chain : {
-        id: 84531,
-        rpcUrl: "https://goerli.base.org"
-      },
-      openLogin: {
-        redirectUrl: [window.location.origin],
-      },
-    };
-    const gaslessOnboarding = new GaslessOnboarding(
-      loginConfig,
-      gaslessWalletConfig
-    );
-    
-    await gaslessOnboarding.init();
-    const web3AP = await gaslessOnboarding.login();
-    setWeb3AuthProvider(web3AP);
+
+    const particleProvider = new ParticleProvider(particle.auth);
+    const provider = new ethers.providers.Web3Provider(particleProvider, "any");
+    console.log(provider);
+    const userInfo = await particle.auth.login();
+    console.log(userInfo);
     setLoginLoading(false);
-    // console.log("Web3 Auth Provider", web3AP);
-    setGOBMethod(gaslessOnboarding);
 
-    const gaslessWallet = gaslessOnboarding.getGaslessWallet();
-    setGW(gaslessWallet);
-    // console.log("Wallet is", gaslessWallet)
-
-    const address = gaslessWallet.getAddress();
-    setWalletAddress(address);
-    console.log("Address is", address)
+    const accounts = await provider.listAccounts();
+    console.log(accounts[0]);
+    setWalletAddress(accounts[0]);
+    setWeb3AuthProvider(provider);
+    console.log("Particle Provider", web3AuthProvider);
+    console.log("Address is",walletAddress)
     onClose();
   } catch (err){
     console.error(err);
   }
 }
 
-const fetchStatus = async(clear) => {
-  try{
-    fetch(`https://relay.gelato.digital/tasks/status/${taskId}`)
-      .then(response => response.json())
-      .then(task => {
-        if(task.task != undefined){
-          setTaskStatus(task.task.taskState)
-          console.log(task.task.taskState);
-          if(task.task.taskState == 'Cancelled' || task.task.taskState == 'ExecSuccess'){
-            clearInterval(clear)
-            setMinting(false)
-            setGenerated(true)
-            const now = new Date();
-            let timestamp = date.format(now, 'YYYY/MM/DD HH:mm:ss'); 
-            if(task.task.taskState == 'ExecSuccess'){
-              let obj = {tokenId: 0, url: imageUrl, iteration:iter, owner: walletAddress, timestamp: timestamp}
-              setMynfts(oldNfts => [...oldNfts, obj])
-            }
-            setTimeout(()=>{
-              setTaskStatus('')
-            }, [3000])
-          }
-        }
-      });
-  }
-  catch(err){
-    setTaskStatus('Initialised')
-  }
-}
-
 const renderAlert = () => {
-  // console.log("TaskStatus is", taskStatus);
-  // console.log("here in renderAlert")
   switch(taskStatus){
     case 'Initialised':
       return <Alert margin='15px 0px' borderRadius='3px'  status='info'>
               <AlertIcon />
               <AlertTitle>Minting!</AlertTitle>
-              <AlertDescription>Minting of your NFT has been Initialised</AlertDescription>
-            </Alert>
-    case 'CheckPending':
-      return <Alert margin='15px 0px' borderRadius='3px' status='info'>
-              <AlertIcon />
-              <AlertTitle>Your request is being processed!</AlertTitle>
-              <AlertDescription>Transaction check in progress</AlertDescription>
-            </Alert>
-    case 'ExecPending':
-      return <Alert  margin='15px 0px' borderRadius='3px' status='info'>
-              <AlertIcon />
-              <AlertTitle>Your request is being processed!</AlertTitle>
-              <AlertDescription>Executing mint transaction</AlertDescription>
-            </Alert>
-    case 'WaitingForConfirmation':
-      return <Alert margin='15px 0px' borderRadius='3px' status='info'>
-              <AlertIcon />
-              <AlertTitle>Your request is being processed!</AlertTitle>
-              <AlertDescription>Waiting for block confirmation</AlertDescription>
+              <AlertDescription> Minting of your NFT has been Initialised </AlertDescription>
             </Alert>
     case 'ExecSuccess':
       return <Alert margin='15px 0px'  borderRadius='3px' status='success'>
@@ -271,14 +234,6 @@ const renderAlert = () => {
               <AlertTitle>NFT minting failed!</AlertTitle>
               <AlertDescription>Your request was cancelled, please try again</AlertDescription>
             </Alert>
-    case 'ExecReverted':
-      return <Alert margin='15px 0px' borderRadius='3px' status='error'>
-                <AlertIcon />
-                <AlertTitle>NFT minting failed!</AlertTitle>
-                <AlertDescription>Your request was reverted, please try again</AlertDescription>
-              </Alert>
-    // default: return <Alert severity='info'> WAITTTTT</Alert>
-
   }
 }
 
@@ -295,8 +250,6 @@ const showMyNfts = async () => {
 }
 
 const renderNftCards = () => {
-
-  // const  = [{test:'test'}, {test:'test'}, {test:'test'}, {test:'test'}]
   if(mynfts.length)return mynfts.map((nft, index) => 
           
       <div key={index}>
@@ -368,14 +321,6 @@ useEffect(()=>{
   login();
 }, [])
 
-useEffect(() => {
-  if(taskId){
-
-    let clear = setInterval(() => {
-     fetchStatus(clear);
-    }, 1500);
- }
-}, [taskId])
 
 useEffect(() => {
   console.log('Task status was changed', taskStatus);
