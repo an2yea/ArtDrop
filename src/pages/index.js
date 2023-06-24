@@ -39,7 +39,6 @@ export default function Home() {
     },
   });
 
-  let replicate_private_key = process.env.NEXT_PUBLIC_REPLICATE_PVT_KEY;
   let pinata_jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
   let grad1 = 'linear-gradient(90deg, rgba(10,116,255,1) 0%, rgba(52,122,202,1) 38%, rgba(0,228,173,1) 100%)'
   let grad2 = 'linear-gradient(90deg,rgba(0,228,173,1) 0%, rgba(52,122,202,1) 38%, rgba(10,116,255,1) 100%)'
