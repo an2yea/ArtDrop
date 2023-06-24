@@ -15,9 +15,6 @@ import date from 'date-and-time';
 import { PARTICLE_PROJECT_ID, PARTICLE_CLIENT_KEY, PARTICLE_APP_ID } from '@/constants/particleConstants'
 import {ParticleProvider} from "@particle-network/provider"
 import { ParticleNetwork, WalletEntryPosition } from "@particle-network/auth";
-import Link from 'next/link'
-
-const currWalletAddress="0xa2D1Daa954A71C7049792ebF5F86d469D847c43B"
 
 
 export default function Home() {
@@ -230,7 +227,7 @@ const renderAlert = () => {
       return <Alert margin='15px 0px'  borderRadius='3px' status='success'>
                 <AlertIcon />
                 <AlertTitle>NFT minted!</AlertTitle>
-                <AlertDescription>Your AI image has been ArtDropped to your wallet. Check your transaction at https://mumbai.polygonscan.com/address/0xa2D1Daa954A71C7049792ebF5F86d469D847c43B </AlertDescription>
+                <AlertDescription>Your AI image has been ArtDropped to your wallet. </AlertDescription>
               </Alert>
     case 'Cancelled':
       return <Alert margin='15px 0px' borderRadius='3px' status='error'>
@@ -248,6 +245,7 @@ const handleLogOut = async() =>{
     await particle.auth.logout();
     setWalletAddress('');
     // window.location.replace('https://artdropnft.vercel.app/')
+    login();
   } catch (err){
     console.error(err);
   }
