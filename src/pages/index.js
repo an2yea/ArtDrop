@@ -17,6 +17,7 @@ import {ParticleProvider} from "@particle-network/provider"
 import { ParticleNetwork, WalletEntryPosition } from "@particle-network/auth";
 import Link from 'next/link'
 
+const currWalletAddress="0xa2D1Daa954A71C7049792ebF5F86d469D847c43B"
 
 
 export default function Home() {
@@ -81,18 +82,21 @@ export default function Home() {
   }
 
   let submitPrompt = async () => {
+    try{
     console.log("gen is", generated)
     setGeneratingImg(true);
     await generateImage();
     setGenerated(false);
+    } catch (err){
+      console.error(err);
+    }
 
   }
 
 let checkStatus = async (clear, id) =>{
-
+  try{
   const response = await fetch("/api/generation/" + id);
   let responseData = await response.json();
-
     console.log(responseData.status)
     if(responseData.status =='succeeded'){
           clearInterval(clear);
@@ -103,6 +107,9 @@ let checkStatus = async (clear, id) =>{
         console.log(responseData.output[0]);
     //     // genIpfsHash(st.data.output[0])
     }
+  } catch (err){
+    console.error(err);
+  }
 }
 let generateImage = async() => {
   setImageUrl('')
@@ -159,7 +166,7 @@ const genIpfsHash = async() => {
   
 }
 const mintNFT = async () => {
-
+  try{
   setMinting(true)
   setGenerated(false)
   let ipfsHash = await genIpfsHash();
@@ -175,15 +182,22 @@ const mintNFT = async () => {
     CONTRACT_ABI, 
     signer
   )
-
-  // const tx = await contract.mintNFT(walletAddress, tokenURI);
+  console.log(contract);
+  const tx = await contract.mintNFT(walletAddress, tokenURI);
+  const balance = await contract.balanceOf(walletAddress);
+  console.log("Balance in mintNFT" , balance);
+  const owner = await contract.owner();
+  console.log("owner is", owner)
   setTaskStatus('Initialised')
   console.log("Task status initialised", taskStatus)
-  // await tx.wait();
+  await tx.wait();
   setTaskStatus('ExecSuccess');
   console.log("Task succeeded", taskStatus)
   setMinting(false);  
-  console.log(tx);
+  console.log("hash of mint", tx);
+  } catch (err){
+    console.error(err);
+  }
 }
 
 const login = async() => {
@@ -198,8 +212,6 @@ const login = async() => {
     const accounts = await provider.listAccounts();
     setWalletAddress(accounts[0]);
     setWeb3AuthProvider(provider);
-    console.log("Particle Provider", web3AuthProvider);
-    console.log("Address is", walletAddress)
     onClose();
   } catch (err){
     console.error(err);
@@ -218,7 +230,7 @@ const renderAlert = () => {
       return <Alert margin='15px 0px'  borderRadius='3px' status='success'>
                 <AlertIcon />
                 <AlertTitle>NFT minted!</AlertTitle>
-                <AlertDescription>Your AI image has been ArtDropped to your wallet. Check your transaction at <Link> "https://mumbai.polygonscan.com/address/${walletAddress}"</Link></AlertDescription>
+                <AlertDescription>Your AI image has been ArtDropped to your wallet. Check your transaction at https://mumbai.polygonscan.com/address/0xa2D1Daa954A71C7049792ebF5F86d469D847c43B </AlertDescription>
               </Alert>
     case 'Cancelled':
       return <Alert margin='15px 0px' borderRadius='3px' status='error'>
@@ -232,12 +244,17 @@ const renderAlert = () => {
 
 
 const handleLogOut = async() =>{
-  await particle.auth.logout();
-  setWalletAddress('');
-  window.location.replace('https://artdropnft.vercel.app/')
+  try{
+    await particle.auth.logout();
+    setWalletAddress('');
+    // window.location.replace('https://artdropnft.vercel.app/')
+  } catch (err){
+    console.error(err);
+  }
 }
 
 const showMyNfts = async () => {
+  // window.location.replace(`https://mumbai.polygonscan.com/address/${walletAddress}`)
   onOpenM();
 }
 
@@ -276,18 +293,13 @@ const fetchNfts = async () => {
       try{
       if(web3AuthProvider != undefined){
         console.log("provider is defined")
-        const nfts = [];
-        const provider = new ethers.providers.Web3Provider(web3AuthProvider);
-        const signer = await provider.getSigner();
+        const nfts = []; //all of the nfts that you own
+        const signer = web3AuthProvider.getSigner();
         const nftContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        console.log("Still in fetchNft", walletAddress);
         let owner = await nftContract.owner();
-        console.log(owner);
+        console.log("owner", owner);
         let bal = await nftContract.balanceOf(walletAddress);
-        console.log(bal);
         console.log('Balance is', bal.toNumber());
- 
-
         for(var i=0; i<bal;++i){
           const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
           const tokenURI = await nftContract.tokenURI(tokenId);
@@ -302,11 +314,10 @@ const fetchNfts = async () => {
         setMynftsLoading(false)
 
       }
-    }catch(err){
+    } catch(err) {
       console.log("error fetching NFTs ")
       console.log(err);
     }
-
 }
 //useEffects ----------
 
